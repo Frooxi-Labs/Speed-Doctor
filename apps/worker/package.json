@@ -10,11 +10,11 @@
     "typecheck": "tsc -p tsconfig.json"
   },
   "dependencies": {
-    "@nestjs/common": "^10.0.0",
-    "@nestjs/core": "^10.0.0",
-    "bullmq": "^5.76.10",
-    "ioredis": "^5.3.2",
-    "reflect-metadata": "^0.1.13",
+    "@nestjs/common": "^11.1.26",
+    "@nestjs/core": "^11.1.26",
+    "bullmq": "^5.78.0",
+    "ioredis": "^5.11.1",
+    "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.1",
     "@speed-doctor/queue": "workspace:*",
     "@speed-doctor/db": "workspace:*",

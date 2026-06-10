@@ -17,8 +17,8 @@
   },
   "types": "src/index.ts",
   "dependencies": {
-    "bullmq": "^5.76.10",
-    "ioredis": "^5.3.2",
+    "bullmq": "^5.78.0",
+    "ioredis": "^5.11.1",
     "@speed-doctor/shared-types": "workspace:*"
   },
   "devDependencies": {
