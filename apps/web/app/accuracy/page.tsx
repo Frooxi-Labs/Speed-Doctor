@@ -52,11 +52,13 @@ export default function AccuracyPage() {
         </P>
       </Section>
 
-      <Section id="variance" title="5. Single run vs. medians & variance">
+      <Section id="variance" title="5. Run-to-run variance & medians">
         <P>
           Lighthouse results naturally vary run to run — ads, A/B tests, lazy content and third-party scripts
-          all introduce noise. Speed Doctor reports a single run for speed; treat one number as a snapshot, and
-          look at the <em>trend</em> across several runs rather than a single absolute figure.
+          all introduce noise. To keep scores stable, Speed Doctor runs the audit multiple times and reports the
+          <strong> median run</strong> (the same technique Lighthouse CI and PSI use), so one noisy pass
+          can&apos;t drag your score down. Still, treat the number as a snapshot and watch the <em>trend</em>
+          across audits rather than chasing a single absolute figure.
         </P>
       </Section>
 

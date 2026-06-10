@@ -9,6 +9,7 @@
 
 import * as chromeLauncher from 'chrome-launcher';
 import lighthouse from 'lighthouse';
+import { buildLighthouseOptions } from './lh-config.mjs';
 
 async function main() {
   let payload;
@@ -31,17 +32,7 @@ async function main() {
     ],
   });
 
-  const options = {
-    logLevel: 'error',
-    output: 'json',
-    port: chrome.port,
-    formFactor: device === 'mobile' ? 'mobile' : 'desktop',
-    screenEmulation:
-      device === 'mobile'
-        ? { mobile: true, width: 360, height: 640, deviceScaleFactor: 2, disabled: false }
-        : { mobile: false, width: 1350, height: 940, deviceScaleFactor: 1, disabled: false },
-    throttlingMethod: 'simulate',
-  };
+  const options = buildLighthouseOptions(device, chrome.port);
 
   try {
     const result = await lighthouse(url, options);

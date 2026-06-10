@@ -1,7 +1,7 @@
 import { spawn } from 'node:child_process';
 import { existsSync } from 'node:fs';
 import { dirname, join } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { performance } from 'node:perf_hooks';
 import * as chromeLauncher from 'chrome-launcher';
 import lighthouse from 'lighthouse';
@@ -10,6 +10,11 @@ import { parseLighthouseResult } from './parser';
 
 const LH_TIMEOUT_MS = Number(process.env.LH_TIMEOUT_MS ?? 120_000);
 const LH_MAX_CONCURRENCY = Math.max(1, parseInt(process.env.LH_MAX_CONCURRENCY ?? '1', 10));
+// Number of Lighthouse passes per audit. We report the MEDIAN run to remove
+// single-run noise (ads, lazy content, third-party jitter) that otherwise
+// drags scores down unpredictably — the same approach Lighthouse CI/PSI use.
+// Capped at 5 to bound scan time. Set LH_RUNS=1 to disable.
+const LH_RUNS = Math.min(5, Math.max(1, parseInt(process.env.LH_RUNS ?? '3', 10)));
 
 /* ------------------------------------------------------------------ *
  * Bounded concurrency — caps how many Lighthouse child processes run
@@ -30,14 +35,18 @@ async function acquireSlot(): Promise<() => void> {
   };
 }
 
-function resolveChildScript(): string | null {
+function resolveSibling(fileName: string): string | null {
   const here = dirname(fileURLToPath(import.meta.url));
   const candidates = [
-    join(here, 'lh-child.mjs'), // tsx/dev: alongside runner.ts in src
-    join(here, '..', 'src', 'lh-child.mjs'), // compiled dist -> ../src
-    join(here, '..', 'lh-child.mjs'),
+    join(here, fileName), // tsx/dev: alongside runner.ts in src
+    join(here, '..', 'src', fileName), // compiled dist -> ../src
+    join(here, '..', fileName),
   ];
   return candidates.find((p) => existsSync(p)) ?? null;
+}
+
+function resolveChildScript(): string | null {
+  return resolveSibling('lh-child.mjs');
 }
 
 /* ------------------------------------------------------------------ *
@@ -111,17 +120,12 @@ async function runInProcess(url: string, device: ScanDevice): Promise<Lighthouse
   const chrome = await chromeLauncher.launch({
     chromeFlags: ['--headless=new', '--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage', '--disable-gpu'],
   });
-  const options = {
-    logLevel: 'error' as const,
-    output: 'json' as const,
-    port: chrome.port,
-    formFactor: device === 'mobile' ? ('mobile' as const) : ('desktop' as const),
-    screenEmulation:
-      device === 'mobile'
-        ? { mobile: true, width: 360, height: 640, deviceScaleFactor: 2, disabled: false }
-        : { mobile: false, width: 1350, height: 940, deviceScaleFactor: 1, disabled: false },
-    throttlingMethod: 'simulate' as const,
-  };
+  // Shares the PSI-aligned throttling presets used by the child-process path.
+  // Resolved from src (like lh-child.mjs) since .mjs assets aren't emitted to dist.
+  const configPath = resolveSibling('lh-config.mjs');
+  if (!configPath) throw new Error('Could not locate lh-config.mjs');
+  const { buildLighthouseOptions } = await import(pathToFileURL(configPath).href);
+  const options = buildLighthouseOptions(device, chrome.port);
   try {
     const result = await lighthouse(url, options);
     if (!result) throw new Error('Lighthouse audit failed to yield any results.');
@@ -134,7 +138,7 @@ async function runInProcess(url: string, device: ScanDevice): Promise<Lighthouse
   }
 }
 
-export async function runLighthouse(url: string, device: ScanDevice): Promise<LighthouseResult> {
+async function runLighthouseOnce(url: string, device: ScanDevice): Promise<LighthouseResult> {
   const releaseSlot = await acquireSlot();
   try {
     const script = resolveChildScript();
@@ -144,4 +148,42 @@ export async function runLighthouse(url: string, device: ScanDevice): Promise<Li
   } finally {
     releaseSlot();
   }
+}
+
+/**
+ * Pick the representative (median) run. We return one run's results unchanged
+ * rather than averaging metrics independently, so the reported scores and
+ * metrics stay internally consistent. The median is chosen by performance
+ * score; ties fall back to the run with the median LCP.
+ */
+function selectMedianRun(results: LighthouseResult[]): LighthouseResult {
+  const sorted = [...results].sort((a, b) => {
+    const perfDiff = a.scores.performance - b.scores.performance;
+    if (perfDiff !== 0) return perfDiff;
+    return a.metrics.lcp - b.metrics.lcp;
+  });
+  // Lower-middle element for even counts — conservative but stable.
+  return sorted[Math.floor((sorted.length - 1) / 2)] as LighthouseResult;
+}
+
+export async function runLighthouse(url: string, device: ScanDevice): Promise<LighthouseResult> {
+  if (LH_RUNS === 1) {
+    return runLighthouseOnce(url, device);
+  }
+
+  const results: LighthouseResult[] = [];
+  let lastError: unknown;
+  for (let i = 0; i < LH_RUNS; i++) {
+    try {
+      results.push(await runLighthouseOnce(url, device));
+    } catch (err) {
+      lastError = err;
+    }
+  }
+
+  if (results.length === 0) {
+    throw lastError instanceof Error ? lastError : new Error('All Lighthouse runs failed');
+  }
+
+  return selectMedianRun(results);
 }

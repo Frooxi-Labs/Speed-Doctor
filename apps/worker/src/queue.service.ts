@@ -67,7 +67,7 @@ export class QueueService implements OnModuleInit, OnModuleDestroy {
       // 2. Playwright scan
       this.logger.log(`[${auditRunId}] Starting Playwright scan...`);
       const scanResult = await scanPage(url, activeDevice);
-      await job.updateProgress({ stage: 'lighthouse', percent: 30, message: 'Running Lighthouse audit...' });
+      await job.updateProgress({ stage: 'lighthouse', percent: 30, message: 'Running Lighthouse (multiple passes for accuracy)...' });
 
       // 3. Lighthouse scan
       this.logger.log(`[${auditRunId}] Starting Lighthouse scan...`);
