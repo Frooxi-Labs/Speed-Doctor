@@ -1,0 +1,19 @@
+{
+  "name": "@speed-doctor/lighthouse-engine",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "main": "src/index.ts",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "chrome-launcher": "^1.2.1",
+    "lighthouse": "^10.0.0",
+    "@speed-doctor/shared-types": "workspace:*"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.1"
+  }
+}

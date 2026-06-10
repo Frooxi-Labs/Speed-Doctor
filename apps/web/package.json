@@ -1,0 +1,27 @@
+{
+  "name": "@speed-doctor/web",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "next dev -p 3000 --turbopack",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
+  },
+  "dependencies": {
+    "next": "15.3.0",
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
+    "@speed-doctor/shared-types": "workspace:*",
+    "tailwindcss": "3.4.19",
+    "autoprefixer": "10.4.19",
+    "postcss": "8.4.35"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "@types/node": "^20.11.24",
+    "typescript": "^5.6.1"
+  }
+}

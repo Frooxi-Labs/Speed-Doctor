@@ -1,0 +1,17 @@
+{
+  "name": "@speed-doctor/root-cause-engine",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "main": "src/index.ts",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@speed-doctor/shared-types": "workspace:*"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.1"
+  }
+}

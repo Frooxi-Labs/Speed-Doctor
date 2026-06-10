@@ -1,0 +1,35 @@
+{
+  "name": "@speed-doctor/worker",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "tsx src/main.ts",
+    "build": "nest build",
+    "start": "node dist/main.js",
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@nestjs/common": "^10.0.0",
+    "@nestjs/core": "^10.0.0",
+    "bullmq": "^5.76.10",
+    "ioredis": "^5.3.2",
+    "reflect-metadata": "^0.1.13",
+    "rxjs": "^7.8.1",
+    "@speed-doctor/queue": "workspace:*",
+    "@speed-doctor/db": "workspace:*",
+    "@speed-doctor/scanner": "workspace:*",
+    "@speed-doctor/lighthouse-engine": "workspace:*",
+    "@speed-doctor/dom-analyzer": "workspace:*",
+    "@speed-doctor/root-cause-engine": "workspace:*",
+    "@speed-doctor/priority-engine": "workspace:*",
+    "@speed-doctor/shared-types": "workspace:*",
+    "drizzle-orm": "^0.45.2"
+  },
+  "devDependencies": {
+    "@nestjs/cli": "^10.0.0",
+    "@nestjs/schematics": "^10.0.0",
+    "typescript": "^5.6.1",
+    "ts-node": "^10.9.1"
+  }
+}
