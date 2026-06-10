@@ -4,6 +4,12 @@
 echo "🚀 Starting Speed Doctor Deployment..."
 
 # 1. Install dependencies
+echo "📦 Checking environment..."
+if [ ! -f .env ]; then
+    echo "❌ Error: .env file not found! Please create it from .env.example"
+    exit 1
+fi
+
 echo "📦 Installing dependencies..."
 pnpm install
 
