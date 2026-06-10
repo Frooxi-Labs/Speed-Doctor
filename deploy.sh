@@ -32,32 +32,30 @@ echo "🔄 Starting services with PM2..."
 # Stop existing processes if they exist
 pm2 delete speed-doctor-api speed-doctor-worker speed-doctor-web 2>/dev/null || true
 
-# Start API (Port 3001)
+# Start API (Using port from .env)
 pm2 start "pnpm --filter @speed-doctor/api start" --name speed-doctor-api
 
 # Start Worker (Background)
-# This handles the heavy lifting with Playwright/Lighthouse
 pm2 start "pnpm --filter @speed-doctor/worker start" --name speed-doctor-worker
 
-# Start Web (Frontend - Port 3000)
-# Make sure NEXT_PUBLIC_API_URL is set in your .env before building
-pm2 start "pnpm --filter @speed-doctor/web start" --name speed-doctor-web
+# Start Web (Frontend - Custom Port 3014)
+# We pass PORT=3014 to next start
+pm2 start "PORT=3014 pnpm --filter @speed-doctor/web start" --name speed-doctor-web
 
-# 6. Nginx Setup Reminder
-echo "🌐 Ensuring Nginx is configured..."
-if [ -f /etc/nginx/sites-available/speed-doctor ]; then
+# 6. Nginx Setup
+echo "🌐 Configuring Nginx for speed-doctor.frooxi.com and IP..."
+# This assumes you are running as root or have sudo access
+if [ -d /etc/nginx/sites-available ]; then
+    sudo cp nginx.conf /etc/nginx/sites-available/speed-doctor
+    sudo ln -sf /etc/nginx/sites-available/speed-doctor /etc/nginx/sites-enabled/
     sudo nginx -t && sudo systemctl reload nginx
-    echo "✅ Nginx reloaded!"
+    echo "✅ Nginx configured and reloaded!"
 else
-    echo "⚠️ Nginx configuration not found in /etc/nginx/sites-available/speed-doctor"
-    echo "💡 Run the following to set it up:"
-    echo "   sudo cp nginx.conf /etc/nginx/sites-available/speed-doctor"
-    echo "   sudo ln -s /etc/nginx/sites-available/speed-doctor /etc/nginx/sites-enabled/"
-    echo "   sudo nginx -t && sudo systemctl reload nginx"
+    echo "⚠️ Nginx directory not found. Please manually configure Nginx using the nginx.conf file."
 fi
 
 echo "✅ Deployment Complete!"
-echo "📍 API: http://localhost:3001"
-echo "📍 Web: http://localhost:3000"
+echo "📍 Domain: http://speed-doctor.frooxi.com"
+echo "📍 IP: http://69.62.83.15"
 echo "📊 Monitoring: pm2 list"
 echo "📜 Logs: pm2 logs"
