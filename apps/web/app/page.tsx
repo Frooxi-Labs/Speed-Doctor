@@ -258,8 +258,12 @@ export default function HomePage() {
       {/* ---------- About the author ---------- */}
       <section className="mx-auto max-w-6xl px-6 pb-20 md:px-10">
         <div className="grid items-center gap-8 rounded-[28px] border border-ink/10 bg-paper-pure p-8 shadow-card md:grid-cols-[auto_1fr] md:p-10">
-          <div className="flex h-24 w-24 items-center justify-center rounded-3xl bg-ink font-display text-3xl font-bold text-paper">
-            {site.author.name.split(' ').map((p) => p[0]).join('').slice(0, 2).toUpperCase()}
+          <div className="relative h-24 w-24 shrink-0 overflow-hidden rounded-3xl bg-ink shadow-editorial">
+            <img
+              src="/tanvir-almas.jpg"
+              alt={site.author.name}
+              className="h-full w-full object-cover"
+            />
           </div>
           <div>
             <span className="font-mono text-[11px] uppercase tracking-widest text-ink-faint">{site.author.role}</span>
