@@ -16,17 +16,6 @@
     "isolatedModules": true,
     "resolveJsonModule": true,
     "noEmit": true,
-    "baseUrl": ".",
-    "paths": {
-      "@speed-doctor/shared-types": ["./packages/shared-types/src/index.ts"],
-      "@speed-doctor/scanner": ["./packages/scanner/src/index.ts"],
-      "@speed-doctor/lighthouse-engine": ["./packages/lighthouse-engine/src/index.ts"],
-      "@speed-doctor/dom-analyzer": ["./packages/dom-analyzer/src/index.ts"],
-      "@speed-doctor/root-cause-engine": ["./packages/root-cause-engine/src/index.ts"],
-      "@speed-doctor/ai-engine": ["./packages/ai-engine/src/index.ts"],
-      "@speed-doctor/priority-engine": ["./packages/priority-engine/src/index.ts"],
-      "@speed-doctor/db": ["./packages/db/src/index.ts"],
-      "@speed-doctor/queue": ["./packages/queue/src/index.ts"]
-    }
+    "baseUrl": "."
   }
 }
