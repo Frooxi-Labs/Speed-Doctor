@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "tsx watch --clear-screen=false src/main.ts",
     "build": "nest build",
-    "start": "node dist/main.js",
+    "start": "tsx dist/main.js",
     "lint": "eslint \"src/**/*.{ts,js}\" --fix"
   },
   "dependencies": {
