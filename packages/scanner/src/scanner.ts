@@ -1,7 +1,7 @@
 import { type ScanDevice, type ScanResult } from '@speed-doctor/shared-types';
 import { BrowserPool } from './browser-pool';
 import { withIsolatedPage } from './page-scanner';
-import { validateScanUrl } from './utils/url-validator';
+import { validateScanUrl, isSafeNavigationUrl } from './utils/url-validator';
 import { NetworkRecorder } from './network-recorder';
 import { AssetCollector } from './asset-collector';
 import { collectPageTimings } from './timing-collector';
@@ -15,6 +15,18 @@ export async function scanPage(rawUrl: string, device: ScanDevice): Promise<Scan
   return withIsolatedPage(browser, device, async (page) => {
     const networkRecorder = new NetworkRecorder(page);
     const assetCollector = new AssetCollector(validatedUrl);
+
+    // SSRF guard: re-validate every top-level navigation at request time so a
+    // public URL cannot redirect (or DNS-rebind) into a private/internal host
+    // between the initial check and the actual fetch.
+    await page.route('**/*', async (route) => {
+      const request = route.request();
+      if (request.isNavigationRequest() && !(await isSafeNavigationUrl(request.url()))) {
+        await route.abort('addressunreachable').catch(() => {});
+        return;
+      }
+      await route.continue().catch(() => {});
+    });
 
     // Attach response listener for the asset collector
     page.on('response', (response) => {

@@ -31,7 +31,10 @@ async function bootstrap() {
 
   const app = await NestFactory.create<NestFastifyApplication>(
     AppModule,
-    new FastifyAdapter({ logger: true }),
+    // trustProxy: 'loopback' makes Fastify derive req.ip from X-Forwarded-For
+    // ONLY when the connecting socket is the local reverse proxy (nginx). This
+    // prevents clients from spoofing X-Forwarded-For to bypass rate limiting.
+    new FastifyAdapter({ logger: true, trustProxy: 'loopback', bodyLimit: 64 * 1024 }),
     { bufferLogs: true },
   );
 

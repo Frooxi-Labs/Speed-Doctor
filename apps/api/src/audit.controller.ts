@@ -29,37 +29,56 @@ import { map, switchMap, takeWhile, distinctUntilChanged } from 'rxjs/operators'
 import { type AuditReport, type PrioritizedIssue, type ScanDevice } from '@speed-doctor/shared-types';
 import { RateLimitGuard } from './guards/rate-limit.guard';
 import dns from 'dns';
+import net from 'net';
 
 interface StartAuditDto {
   url: string;
   device?: ScanDevice | 'both';
 }
 
-function isPrivateIp(ip: string): boolean {
-  if (ip === '127.0.0.1' || ip === '0.0.0.0' || ip === '::1' || ip === '::') return true;
-  if (ip.startsWith('10.') || ip.startsWith('192.168.')) return true;
+const VALID_DEVICES: ReadonlySet<string> = new Set(['desktop', 'mobile', 'both']);
+
+function isPrivateIpv4(ip: string): boolean {
   const parts = ip.split('.').map(Number);
-  if (parts.length === 4) {
-    const [p1, p2] = parts;
-    if (p1 === 172 && p2 !== undefined && p2 >= 16 && p2 <= 31) return true;
-    if (p1 === 169 && p2 === 254) return true;
-    if (p1 === 127) return true;
-  }
-  if (/^fe[89ab]/i.test(ip) || /^f[cd]/i.test(ip)) return true;
+  if (parts.length !== 4 || parts.some((p) => !Number.isInteger(p) || p < 0 || p > 255)) return true;
+  const [a, b] = parts as [number, number, number, number];
+  if (a === 0 || a === 10 || a === 127) return true;
+  if (a === 169 && b === 254) return true; // link-local incl. 169.254.169.254 cloud metadata
+  if (a === 172 && b >= 16 && b <= 31) return true;
+  if (a === 192 && b === 168) return true;
+  if (a === 100 && b >= 64 && b <= 127) return true; // CGNAT
+  if (a >= 224) return true; // multicast + reserved
   return false;
 }
 
+function isPrivateIp(ip: string): boolean {
+  const family = net.isIP(ip);
+  if (family === 4) return isPrivateIpv4(ip);
+  if (family === 6) {
+    const lower = ip.toLowerCase();
+    if (lower === '::1' || lower === '::') return true;
+    const mapped = lower.match(/(?:::ffff:|::)((?:\d{1,3}\.){3}\d{1,3})$/);
+    if (mapped && mapped[1]) return isPrivateIpv4(mapped[1]);
+    if (/^fe[89ab]/.test(lower) || lower.startsWith('fc') || lower.startsWith('fd') || lower.startsWith('ff')) return true;
+    return false;
+  }
+  return true; // not a valid IP literal — fail closed
+}
+
 async function isSsrfUrl(hostname: string): Promise<boolean> {
-  const h = hostname.trim().toLowerCase();
-  if (h === 'localhost' || h.endsWith('.local') || h.endsWith('.internal')) return true;
+  const h = hostname.trim().toLowerCase().replace(/^\[|\]$/g, '');
+  if (h === 'localhost' || h.endsWith('.localhost') || h.endsWith('.local') || h.endsWith('.internal')) return true;
+  if (net.isIP(h)) return isPrivateIp(h);
   try {
-    const addresses = await dns.promises.resolve(h).catch(async () => {
-      const res = await dns.promises.lookup(h);
-      return [res.address];
-    });
+    const results = await Promise.allSettled([dns.promises.resolve4(h), dns.promises.resolve6(h)]);
+    const addresses = results.flatMap((r) => (r.status === 'fulfilled' ? r.value : []));
+    if (addresses.length === 0) {
+      const all = await dns.promises.lookup(h, { all: true });
+      return all.length === 0 || all.some((a) => isPrivateIp(a.address));
+    }
     return addresses.some(isPrivateIp);
   } catch {
-    return false;
+    return true; // unresolvable — fail closed
   }
 }
 
@@ -128,6 +147,10 @@ export class AuditController {
 
     if (!url || typeof url !== 'string') {
       throw new BadRequestException('URL is required.');
+    }
+
+    if (typeof device !== 'string' || !VALID_DEVICES.has(device)) {
+      throw new BadRequestException('device must be one of: desktop, mobile, both.');
     }
 
     // 1. Parse and validate URL scheme
