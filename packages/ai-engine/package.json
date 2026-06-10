@@ -20,6 +20,6 @@
     "@speed-doctor/shared-types": "workspace:*"
   },
   "devDependencies": {
-    "typescript": "^5.6.1"
+    "typescript": "^6.0.3"
   }
 }
