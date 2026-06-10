@@ -43,6 +43,19 @@ pm2 start "pnpm --filter @speed-doctor/worker start" --name speed-doctor-worker
 # Make sure NEXT_PUBLIC_API_URL is set in your .env before building
 pm2 start "pnpm --filter @speed-doctor/web start" --name speed-doctor-web
 
+# 6. Nginx Setup Reminder
+echo "🌐 Ensuring Nginx is configured..."
+if [ -f /etc/nginx/sites-available/speed-doctor ]; then
+    sudo nginx -t && sudo systemctl reload nginx
+    echo "✅ Nginx reloaded!"
+else
+    echo "⚠️ Nginx configuration not found in /etc/nginx/sites-available/speed-doctor"
+    echo "💡 Run the following to set it up:"
+    echo "   sudo cp nginx.conf /etc/nginx/sites-available/speed-doctor"
+    echo "   sudo ln -s /etc/nginx/sites-available/speed-doctor /etc/nginx/sites-enabled/"
+    echo "   sudo nginx -t && sudo systemctl reload nginx"
+fi
+
 echo "✅ Deployment Complete!"
 echo "📍 API: http://localhost:3001"
 echo "📍 Web: http://localhost:3000"
